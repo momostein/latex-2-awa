@@ -10,6 +10,8 @@ import re
 from pylatexenc.latexwalker import LatexWalker,\
     LatexCommentNode, LatexEnvironmentNode, LatexCharsNode, LatexMacroNode
 
+# TODO: Make this a proper command line tool with command line options
+
 IN_FILE = "tekst.tex"
 OUT_FILE = "tekst.txt"
 
@@ -19,6 +21,8 @@ pp = pprint.PrettyPrinter(indent=4)
 # Regex matches
 re_newline = re.compile(r"\s*\n\s*")
 re_section = re.compile(r"(?:sub)*section")
+re_cite = re.compile(r"cite")
+re_new_paragraph = re.compile(r"\n{2,}")
 
 # Read latex file
 with open(IN_FILE, "r") as fp:
@@ -35,8 +39,13 @@ with open(OUT_FILE, "w") as fp:
     # Number of titles
     num_titles = 0
 
+    # If previous node is a citation
+    prev_cite = False
+
     # Loop over all nodes
     for node in nodes:
+        # TODO: Implement more rules and process environments recursively
+
         # Ignore comment nodes
         if isinstance(node, LatexCommentNode):
             # print("Comment:", node.comment)
@@ -50,6 +59,15 @@ with open(OUT_FILE, "w") as fp:
 
         # Parsing normal text
         if isinstance(node, LatexCharsNode):
+            new_paragraph = True
+            if prev_cite:
+                prev_cite = False
+                # pp.pprint(node.chars)
+
+                if not re_new_paragraph.match(node.chars):
+                    print("No new paragraph")
+                    new_paragraph = False
+
             paragraph = node.chars.strip()
 
             # Ignore nodes with only whitespace
@@ -59,8 +77,13 @@ with open(OUT_FILE, "w") as fp:
             # Remove \n and replace by space
             paragraph = re_newline.sub(" ", paragraph)
 
+            # Start a new paragraph if needed, otherwise just add a space
+            if new_paragraph:
+                fp.write("\n")
+            else:
+                fp.write(" ")
+
             fp.write(paragraph)
-            fp.write("\n")
 
         if isinstance(node, LatexMacroNode):
             # If the macro is a (sub)section or etc.
@@ -72,10 +95,12 @@ with open(OUT_FILE, "w") as fp:
                 section_title = node.nodeargd.argnlist[2].nodelist[0].chars
 
                 # print("Section title:", section_title)
-
-                fp.write("\n")
+                fp.write("\n\n")
                 fp.write(section_title)
-                fp.write("\n")
-                fp.write("\n")
+
+            # If the macro is a citation
+            if re_cite.match(node.macroname):
+                print("CITATION")
+                prev_cite = True
 
 print(f"\nNumber of (sub)titles: { num_titles }")

@@ -12,16 +12,35 @@ Dat is echter niet zo schaalbaar als men op grote schaal met heel veel verschill
 	\label{fig:edge-vs-cloud}
 \end{figure}
 
-Er is gelukkig een grote 'paradigm shift' aan de gang waarbij men meer en meer machine learning gaat uitvoeren in embedded devices.
+Er is gelukkig een grote 'paradigm shift' aan de gang waarbij men steeds meer machine learning gaat uitvoeren in embedded devices.
 Dat is mogelijk omdat de embedded devices steeds sneller en beter worden in het verwerken van data.
 Op die manier kunnen wij het machine learning model dichter bij de sensor plaatsen waardoor wij het benodigde netwerkverkeer minimaliseren.
 Ook de latency of vertraging tussen opname en actie is veel kleiner. \cite{flir-edge-computing}
 
-De ruwe data van de sensoren kan soms ook sensitieve informatie bevatten zoals gezichten of nummerplaten. Omdat we de data on-edge verwerken hoeven we die niet naar de cloud te sturen waar ze onderweg misschien onderschept kunnen worden. \cite{flir-edge-computing}
+De ruwe data van de sensoren kan soms ook sensitieve informatie zoals gezichten of nummerplaten bevatten. Omdat we de data on-edge verwerken hoeven we die niet naar de cloud te sturen waar ze onderweg misschien onderschept kunnen worden. \cite{flir-edge-computing}
+Het is echter niet zo simpel om de machine learning code, die geoptimaliseerd is voor multi-core servers, zomaar over te zetten naar de kleine, vaak single-core, microprocessors van deze embedded devices.
+% In dit verslag leg ik het proces om een machine learning model getrained in python, over te zetten naar C code voor een microcontroller.
 
-Het is echter niet zo simpel om de code geoptimaliseerd voor multi-core servers zomaar over te zetten naar de kleine, vaak single-core, microprocessors van deze embedded devices. In dit verslag leg ik het proces een beetje uit om een Convolutional Neural Netwerk (CNN) in python code, over te zetten naar C code voor op de 32-bit ARM Cortex M-7.
+\subsection{Doel van het project}
 
-\section{Feature extraction}
+Het doel van dit project is met een Convolutional Neural Netwerk (CNN) geluidsevents te classificeren.
+Die geluidsevents kunnen bijvoorbeeld spraak, een handenklap, gefluit of achtergrondgeluid zijn.
+Dat is relatief simpel uit te voeren op een normale PC, maar het is dus niet praktisch om alle geluidsdata van meerdere meetpunten centraal te verwerken in real time.
+Ook is het niet kost-effectief om overal aparte PC's te plaatsen. In dit project ga ik dus het getrained CNN op een microcontroller uitvoeren om geluid van de ingebouwde microfoon te classificeren.
+
+\section{Log-Mel feature extraction}
+
+Het is mogelijk om een CNN te trainen op de onverwerkte geluidsdata.
+Er zijn echter veel grotere modellen voor nodig, tot 34 lagen diep, en zal daarom ook sneller vatbaar voor overfitting. \cite{IEEE:very-deep-cnn-raw-waveforms}
+Daarom is er toch een feature extraction stap gemaakt om de onverwerkte geluidsdata om te rekenen naar een Log-Mel spectrogram.
+Dit Log-Mel spectrogram is eigenlijk een gewoon spectrogram waarvan we de frequentiebanden een beetje vervormd hebben zodat ze beter overeenkomen met de menselijke perceptie van geluid. \cite{enwiki:mel-freq-cepstrum}
+
+
+\subsection{DC-Normalisation}
+\subsection{Framing en windowing}
+\subsection{Discrete Fourier transform}
+\subsection{Mel-frequency warping}
+\subsection{Feature normalisation and scaling}
 
 \section{Convolutional Neural Network (CNN)}
 
