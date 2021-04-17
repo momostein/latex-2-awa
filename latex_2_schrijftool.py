@@ -6,14 +6,19 @@ https://ilt.kuleuven.be/schrijfhulp/
 
 import pprint
 import re
+import argparse
 
 from pylatexenc.latexwalker import LatexWalker,\
     LatexCommentNode, LatexEnvironmentNode, LatexCharsNode, LatexMacroNode
 
-# TODO: Make this a proper command line tool with command line options
+# Read command line options
+parser = argparse.ArgumentParser('Test')
+parser.add_argument('read_file')
+parser.add_argument('write_file')
+args = parser.parse_args()
 
-IN_FILE = "tekst.tex"
-OUT_FILE = "tekst.txt"
+IN_FILE = args.read_file
+OUT_FILE = args.write_file
 
 # Pretty printer
 pp = pprint.PrettyPrinter(indent=4)
@@ -21,7 +26,7 @@ pp = pprint.PrettyPrinter(indent=4)
 # Regex matches
 re_newline = re.compile(r"\s*\n\s*")
 re_section = re.compile(r"(?:sub)*section")
-re_cite = re.compile(r"cite")
+re_cite = re.compile(r"cite|ref")
 re_new_paragraph = re.compile(r"\n{2,}")
 
 # Read latex file
@@ -67,7 +72,6 @@ with open(OUT_FILE, "w") as fp:
                 if not re_new_paragraph.match(node.chars):
                     print("No new paragraph")
                     new_paragraph = False
-
             paragraph = node.chars.strip()
 
             # Ignore nodes with only whitespace
@@ -79,7 +83,7 @@ with open(OUT_FILE, "w") as fp:
 
             # Start a new paragraph if needed, otherwise just add a space
             if new_paragraph:
-                fp.write("\n")
+                fp.write("\n\n")
             else:
                 fp.write(" ")
 
