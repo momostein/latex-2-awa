@@ -29,82 +29,105 @@ re_section = re.compile(r"(?:sub)*section")
 re_cite = re.compile(r"cite|ref")
 re_new_paragraph = re.compile(r"\n{2,}")
 
-# Read latex file
-with open(IN_FILE, "r") as fp:
-    text = fp.read()
 
-# Parse latex
-walker = LatexWalker(text)
+def is_symbol(node: LatexMacroNode):
+    # TODO: improve this function
+    return len(node.macroname) == 1
 
-# Parse nodes
-nodes, pos, length = walker.get_latex_nodes()
 
-# Write output to a file
-with open(OUT_FILE, "w") as fp:
-    # Number of titles
-    num_titles = 0
+if __name__ == "__main__":
 
-    # If previous node is a citation
-    prev_cite = False
+    # Read latex file
+    with open(IN_FILE, "r") as fp:
+        text = fp.read()
 
-    # Loop over all nodes
-    for node in nodes:
-        # TODO: Implement more rules and process environments recursively
+    # Parse latex
+    walker = LatexWalker(text)
 
-        # Ignore comment nodes
-        if isinstance(node, LatexCommentNode):
-            # print("Comment:", node.comment)
-            continue
+    # Parse nodes
+    nodes, pos, length = walker.get_latex_nodes()
 
-        # Ignore certain environments
-        if isinstance(node, LatexEnvironmentNode):
-            # print(node.environmentname)
-            if node.environmentname == "figure":
+    # Write output to a file
+    with open(OUT_FILE, "w") as fp:
+        # Number of titles
+        num_titles = 0
+
+        # If previous node is a citation
+        no_new_paragraph = False
+
+        # Loop over all nodes
+        for node in nodes:
+            # TODO: Implement more rules and process environments recursively
+
+            # Ignore comment nodes
+            if isinstance(node, LatexCommentNode):
+                # print("Comment:", node.comment)
                 continue
 
-        # Parsing normal text
-        if isinstance(node, LatexCharsNode):
-            new_paragraph = True
-            if prev_cite:
-                prev_cite = False
-                # pp.pprint(node.chars)
+            # Ignore certain environments
+            if isinstance(node, LatexEnvironmentNode):
+                # print(node.environmentname)
+                if node.environmentname == "figure":
+                    continue
 
-                if not re_new_paragraph.match(node.chars):
-                    print("No new paragraph")
-                    new_paragraph = False
-            paragraph = node.chars.strip()
+                # Dummy environment to just ignore
+                if node.environmentname == "no-awa":
+                    print("no-awa environment")
+                    continue
 
-            # Ignore nodes with only whitespace
-            if paragraph == "":
-                continue
+            # Parsing normal text
+            if isinstance(node, LatexCharsNode):
+                new_paragraph = True
+                if no_new_paragraph:
+                    no_new_paragraph = False
+                    # pp.pprint(node.chars)
 
-            # Remove \n and replace by space
-            paragraph = re_newline.sub(" ", paragraph)
+                    if not re_new_paragraph.match(node.chars):
+                        print("No new paragraph")
+                        new_paragraph = False
 
-            # Start a new paragraph if needed, otherwise just add a space
-            if new_paragraph:
-                fp.write("\n\n")
-            else:
-                fp.write(" ")
+                paragraph = node.chars.strip()
 
-            fp.write(paragraph)
+                # Ignore nodes with only whitespace
+                if paragraph == "":
+                    continue
 
-        if isinstance(node, LatexMacroNode):
-            # If the macro is a (sub)section or etc.
-            if re_section.match(node.macroname):
-                # Count this title
-                num_titles = num_titles + 1
+                # Remove \n and replace by space
+                paragraph = re_newline.sub(" ", paragraph)
 
-                # Extract section title
-                section_title = node.nodeargd.argnlist[2].nodelist[0].chars
+                # Start a new paragraph if needed, otherwise just add a space
+                if new_paragraph:
+                    fp.write("\n")
+                else:
+                    fp.write(" ")
 
-                # print("Section title:", section_title)
-                fp.write("\n\n")
-                fp.write(section_title)
+                fp.write(paragraph)
 
-            # If the macro is a citation
-            if re_cite.match(node.macroname):
-                print("CITATION")
-                prev_cite = True
+            if isinstance(node, LatexMacroNode):
+                # If the macro is a (sub)section or etc.
+                if re_section.match(node.macroname):
+                    # Count this title
+                    num_titles = num_titles + 1
 
-print(f"\nNumber of (sub)titles: { num_titles }")
+                    # Extract section title
+                    section_title = node.nodeargd.argnlist[2].nodelist[0].chars
+
+                    # print("Section title:", section_title)
+                    fp.write("\n\n")
+                    fp.write(section_title)
+                    continue
+
+                # If the macro is a citation
+                elif re_cite.match(node.macroname):
+                    print("CITATION")
+                    no_new_paragraph = True
+                    continue
+
+                elif is_symbol(node):
+                    fp.write(node.macroname)
+                    no_new_paragraph = True
+                    continue
+
+                print("Unknown macro:", node.macroname)
+
+    print(f"\nNumber of (sub)titles: { num_titles }")
