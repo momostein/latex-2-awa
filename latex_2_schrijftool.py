@@ -12,13 +12,30 @@ from pylatexenc.latexwalker import LatexWalker,\
     LatexCommentNode, LatexEnvironmentNode, LatexCharsNode, LatexMacroNode
 
 # Read command line options
-parser = argparse.ArgumentParser('Test')
-parser.add_argument('read_file')
-parser.add_argument('write_file')
+parser = argparse.ArgumentParser(
+    description="""
+        Parse latex to plaintext
+        for use with the KU Leuven Academic Writing Assistant at
+        https://ilt.kuleuven.be/schrijfhulp/
+    """
+)
+
+parser.add_argument(
+    'input_tex',
+    type=str,
+    help="Input LaTeX (.tex) file"
+)
+
+parser.add_argument(
+    'output_txt',
+    default="plaintext.txt", type=str,
+    help="Output text (.txt) file"
+)
+
 args = parser.parse_args()
 
-IN_FILE = args.read_file
-OUT_FILE = args.write_file
+input_tex = args.input_tex
+output_txt = args.output_txt
 
 # Pretty printer
 pp = pprint.PrettyPrinter(indent=4)
@@ -38,7 +55,7 @@ def is_symbol(node: LatexMacroNode):
 if __name__ == "__main__":
 
     # Read latex file
-    with open(IN_FILE, "r") as fp:
+    with open(input_tex, "r") as fp:
         text = fp.read()
 
     # Parse latex
@@ -48,7 +65,7 @@ if __name__ == "__main__":
     nodes, pos, length = walker.get_latex_nodes()
 
     # Write output to a file
-    with open(OUT_FILE, "w") as fp:
+    with open(output_txt, "w") as fp:
         # Number of titles
         num_titles = 0
 
