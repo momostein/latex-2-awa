@@ -43,7 +43,7 @@ pp = pprint.PrettyPrinter(indent=4)
 # Regex matches
 re_newline = re.compile(r"\s*\n\s*")
 re_section = re.compile(r"(?:sub)*section")
-re_cite = re.compile(r"cite|ref")
+re_cite = re.compile(r"cite|(?:page)?ref")
 re_new_paragraph = re.compile(r"\n{2,}")
 
 
