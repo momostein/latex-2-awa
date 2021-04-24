@@ -9,7 +9,8 @@ import re
 import argparse
 
 from pylatexenc.latexwalker import LatexWalker,\
-    LatexCommentNode, LatexEnvironmentNode, LatexCharsNode, LatexMacroNode
+    LatexCommentNode, LatexEnvironmentNode, LatexCharsNode, LatexMacroNode, \
+    LatexMathNode
 
 # Read command line options
 parser = argparse.ArgumentParser(
@@ -42,8 +43,8 @@ pp = pprint.PrettyPrinter(indent=4)
 
 # Regex matches
 re_newline = re.compile(r"\s*\n\s*")
-re_section = re.compile(r"(?:sub)*section")
-re_cite = re.compile(r"cite|(?:page)?ref")
+re_section = re.compile(r"(?:sub)*section|chapter")
+re_cite = re.compile(r"cite|(?:page|eq)?ref")
 re_new_paragraph = re.compile(r"\n{2,}")
 
 
@@ -83,13 +84,14 @@ if __name__ == "__main__":
 
             # Ignore certain environments
             if isinstance(node, LatexEnvironmentNode):
-                # print(node.environmentname)
-                if node.environmentname == "figure":
-                    continue
 
                 # Dummy environment to just ignore
                 if node.environmentname == "no-awa":
                     print("no-awa environment")
+                    continue
+
+                # print(node.environmentname)
+                if node.environmentname == "figure":
                     continue
 
             # Parsing normal text
@@ -141,10 +143,19 @@ if __name__ == "__main__":
                     continue
 
                 elif is_symbol(node):
-                    fp.write(node.macroname)
+                    fp.write(" " + node.macroname)
                     no_new_paragraph = True
                     continue
 
                 print("Unknown macro:", node.macroname)
 
+            if isinstance(node, LatexMathNode):
+                # print("Math node:", node)
+
+                if node.displaytype == 'inline':
+                    no_new_paragraph = True
+                    # fp.write(" INLINE MATH")
+                    continue
+
+                print("Unknown display type:", node.displaytype)
     print(f"\nNumber of (sub)titles: { num_titles }")
