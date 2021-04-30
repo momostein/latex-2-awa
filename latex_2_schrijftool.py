@@ -10,7 +10,7 @@ import argparse
 
 from pylatexenc.latexwalker import LatexWalker,\
     LatexCommentNode, LatexEnvironmentNode, LatexCharsNode, LatexMacroNode, \
-    LatexMathNode
+    LatexMathNode, LatexSpecialsNode
 
 # Read command line options
 parser = argparse.ArgumentParser(
@@ -33,10 +33,16 @@ parser.add_argument(
     help="Output text (.txt) file"
 )
 
+parser.add_argument(
+    '--no-titles', '-n', dest='no_titles', action='store_true',
+    help="Ignore titles (useful for the english tool)"
+)
+
 args = parser.parse_args()
 
 input_tex = args.input_tex
 output_txt = args.output_txt
+no_titles = args.no_titles
 
 # Pretty printer
 pp = pprint.PrettyPrinter(indent=4)
@@ -47,8 +53,11 @@ re_section = re.compile(r"(?:sub)*section|chapter")
 re_cite = re.compile(r"cite|(?:page|eq)?ref")
 re_new_paragraph = re.compile(r"\n{2,}")
 
+re_double_quote = re.compile(r"``|''")
+re_single_quote = re.compile(r"`|'")
 
-def is_symbol(node: LatexMacroNode):
+
+def is_symbol(node, LatexMacroNode):
     # TODO: improve this function
     return len(node.macroname) == 1
 
@@ -83,7 +92,7 @@ if __name__ == "__main__":
                 continue
 
             # Ignore certain environments
-            if isinstance(node, LatexEnvironmentNode):
+            elif isinstance(node, LatexEnvironmentNode):
 
                 # Dummy environment to just ignore
                 if node.environmentname == "no-awa":
@@ -95,7 +104,7 @@ if __name__ == "__main__":
                     continue
 
             # Parsing normal text
-            if isinstance(node, LatexCharsNode):
+            elif isinstance(node, LatexCharsNode):
                 new_paragraph = True
                 if no_new_paragraph:
                     no_new_paragraph = False
@@ -122,18 +131,19 @@ if __name__ == "__main__":
 
                 fp.write(paragraph)
 
-            if isinstance(node, LatexMacroNode):
+            elif isinstance(node, LatexMacroNode):
                 # If the macro is a (sub)section or etc.
                 if re_section.match(node.macroname):
-                    # Count this title
-                    num_titles = num_titles + 1
+                    if not no_titles:
+                        # Count this title
+                        num_titles = num_titles + 1
 
-                    # Extract section title
-                    section_title = node.nodeargd.argnlist[2].nodelist[0].chars
+                        # Extract section title
+                        section_title = node.nodeargd.argnlist[2].nodelist[0]
 
-                    # print("Section title:", section_title)
-                    fp.write("\n\n")
-                    fp.write(section_title)
+                        # print("Section title:", section_title.chars)
+                        fp.write("\n\n")
+                        fp.write(section_title.chars)
                     continue
 
                 # If the macro is a citation
@@ -149,7 +159,7 @@ if __name__ == "__main__":
 
                 print("Unknown macro:", node.macroname)
 
-            if isinstance(node, LatexMathNode):
+            elif isinstance(node, LatexMathNode):
                 # print("Math node:", node)
 
                 if node.displaytype == 'inline':
@@ -158,4 +168,21 @@ if __name__ == "__main__":
                     continue
 
                 print("Unknown display type:", node.displaytype)
-    print(f"\nNumber of (sub)titles: { num_titles }")
+
+            elif isinstance(node, LatexSpecialsNode):
+                # Special chars
+                if re_double_quote.match(node.specials_chars):
+                    fp.write(' "')
+                    no_new_paragraph = True
+                    continue
+
+                elif re_single_quote.match(node.specials_chars):
+                    fp.write(" '")
+                    no_new_paragraph = True
+                    continue
+
+            else:
+                print("Unknown nodetype:", node)
+
+    if not no_titles:
+        print(f"\nNumber of (sub)titles: { num_titles }")
